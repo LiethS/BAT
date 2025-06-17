@@ -1,6 +1,0 @@
-github.com/VictorVictini/tradingview-lib v0.0.0-20240919160801-440b9f3f562d h1:vGowvQFP2Dc9PIEv4s1D9qjYWyB7xbQ06SlXvyJ2ViU=
-github.com/VictorVictini/tradingview-lib v0.0.0-20240919160801-440b9f3f562d/go.mod h1:SXx0+630MRF6bHfPio+APfSRITPmK5wRCM65x4vG+8c=
-github.com/artlevitan/go-tradingview-ta v1.3.4 h1:56+n/SmN9IJTiiVTv1Z9+4BjjK6KqU24jxPBXZorvi4=
-github.com/artlevitan/go-tradingview-ta v1.3.4/go.mod h1:Gp8QMcLXweCYJdZnotVfyRrXmOXHn7ctbwZH3OUOsyc=
-github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
-github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
