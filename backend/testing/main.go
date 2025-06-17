@@ -1,43 +1,69 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-
-	tradingview "github.com/artlevitan/go-tradingview-ta"
+	"io"
+	"log"
+	"net/http"
+	"time"
 )
 
-const SYMBOL = "BINANCE:BTCUSDT" // https://www.tradingview.com/symbols/BTCUSDT/technicals/
+type YahooResponse struct {
+	Chart struct {
+		Result []struct {
+			Timestamp []int64 `json:"timestamp"`
+			Indicators struct {
+				Quote []struct {
+					Close []float64 `json:"close"`
+				} `json:"quote"`
+			} `json:"indicators"`
+		} `json:"result"`
+		Error interface{} `json:"error"`
+	} `json:"chart"`
+}
 
 func main() {
-	var ta tradingview.TradingView
-	
-	// Fetch data for the specified symbol at a 4-hour interval
-	err := ta.Get(SYMBOL, tradingview.Interval4Hour)
+	url := "https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?interval=1d&range=10y"
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalf("Failed to create request: %v", err)
 	}
-	
-	// Get the summary trading recommendation
-	recSummary := ta.Recommend.Global.Summary
+	// Spoof browser user-agent
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36")
 
-	// Print the recommendation based on the signal
-	switch recSummary {
-	case tradingview.SignalStrongSell:
-		fmt.Println("STRONG_SELL")
-	case tradingview.SignalSell:
-		fmt.Println("SELL")
-	case tradingview.SignalNeutral:
-		fmt.Println("NEUTRAL")
-	case tradingview.SignalBuy:
-		fmt.Println("BUY")
-	case tradingview.SignalStrongBuy:
-		fmt.Println("STRONG_BUY")
-	default:
-		fmt.Println("An error has occurred")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("Request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Failed to read body: %v", err)
 	}
 
-	// Print the latest closing price
-	clPrice := ta.Value.Prices.Close
-	fmt.Println("Closing price:", clPrice)
+	var data YahooResponse
+	if err := json.Unmarshal(body, &data); err != nil {
+		log.Fatalf("Failed to decode JSON: %v", err)
+	}
+
+	if len(data.Chart.Result) == 0 {
+		log.Fatal("No results returned from Yahoo API")
+	}
+
+	timestamps := data.Chart.Result[0].Timestamp
+	closes := data.Chart.Result[0].Indicators.Quote[0].Close
+
+	if len(timestamps) == 0 || len(closes) == 0 {
+		log.Fatal("No timestamps or close prices available")
+	}
+
+	latestIndex := len(timestamps) - 1
+	latestTime := time.Unix(timestamps[latestIndex], 0).UTC()
+	latestClose := closes[latestIndex]
+
+	fmt.Printf("Latest BTC closing price on %s: $%.2f\n", latestTime.Format("2006-01-02"), latestClose)
 }
