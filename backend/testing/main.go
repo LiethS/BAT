@@ -3,67 +3,70 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"time"
 )
 
-type YahooResponse struct {
-	Chart struct {
-		Result []struct {
-			Timestamp []int64 `json:"timestamp"`
-			Indicators struct {
-				Quote []struct {
-					Close []float64 `json:"close"`
-				} `json:"quote"`
-			} `json:"indicators"`
-		} `json:"result"`
-		Error interface{} `json:"error"`
-	} `json:"chart"`
+// Response from CoinGecko
+type CoinGeckoResponse struct {
+	MarketData struct {
+		CurrentPrice map[string]float64 `json:"current_price"`
+	} `json:"market_data"`
+}
+
+// Response to client
+type PriceResponse struct {
+	Date  string  `json:"date"`
+	Price float64 `json:"price"`
 }
 
 func main() {
-	url := "https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?interval=1d&range=10y"
+	http.HandleFunc("/api/price", handlePrice)
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Fatalf("Failed to create request: %v", err)
+	log.Println("✅ Server running at http://localhost:3001")
+	log.Fatal(http.ListenAndServe(":3001", nil))
+}
+
+func handlePrice(w http.ResponseWriter, r *http.Request) {
+	enableCORS(&w)
+	if r.Method == "OPTIONS" {
+		return
 	}
-	// Spoof browser user-agent
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatalf("Request failed: %v", err)
+	date := r.URL.Query().Get("date") // expected format: dd-mm-yyyy
+	if date == "" {
+		http.Error(w, "Missing 'date' query param", http.StatusBadRequest)
+		return
+	}
+
+	url := fmt.Sprintf("https://api.coingecko.com/api/v3/coins/bitcoin/history?date=%s", date)
+
+	resp, err := http.Get(url)
+	if err != nil || resp.StatusCode != 200 {
+		http.Error(w, "Failed to fetch data from CoinGecko", http.StatusInternalServerError)
+		return
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Failed to read body: %v", err)
+	var cg CoinGeckoResponse
+	if err := json.NewDecoder(resp.Body).Decode(&cg); err != nil {
+		http.Error(w, "Error parsing CoinGecko response", http.StatusInternalServerError)
+		return
 	}
 
-	var data YahooResponse
-	if err := json.Unmarshal(body, &data); err != nil {
-		log.Fatalf("Failed to decode JSON: %v", err)
+	price := cg.MarketData.CurrentPrice["usd"]
+
+	result := PriceResponse{
+		Date:  date,
+		Price: price,
 	}
 
-	if len(data.Chart.Result) == 0 {
-		log.Fatal("No results returned from Yahoo API")
-	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
 
-	timestamps := data.Chart.Result[0].Timestamp
-	closes := data.Chart.Result[0].Indicators.Quote[0].Close
-
-	if len(timestamps) == 0 || len(closes) == 0 {
-		log.Fatal("No timestamps or close prices available")
-	}
-
-	latestIndex := len(timestamps) - 1
-	latestTime := time.Unix(timestamps[latestIndex], 0).UTC()
-	latestClose := closes[latestIndex]
-
-	fmt.Printf("Latest BTC closing price on %s: $%.2f\n", latestTime.Format("2006-01-02"), latestClose)
+func enableCORS(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
