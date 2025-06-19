@@ -1,2 +1,2 @@
-# CAT
-Crypto Analysis Tool
+# BAT
+Bitcoin Analysis Tool
