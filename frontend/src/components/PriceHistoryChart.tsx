@@ -3,9 +3,10 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 
+// Match the Go API response structure
 interface HistoryEntry {
-  Date: string;
-  "Close": number;
+  date: string;
+  price: number;
 }
 
 export default function PriceHistoryChart() {
@@ -13,14 +14,13 @@ export default function PriceHistoryChart() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://backend:3001/api/history")
+    fetch("http://localhost:3001/api/history")
       .then((res) => res.json())
-      .then((json) => {
-        // Convert to proper format and reverse if necessary (to make oldest first)
-        const cleaned = json.map((entry: any) => ({
-          Date: entry.Date,
-          Close: Number(entry["Close"]),
-        })).reverse();
+      .then((json: HistoryEntry[]) => {
+        // Sort by ascending date just in case (oldest → newest)
+        const cleaned = [...json].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
         setData(cleaned);
         setLoading(false);
       })
@@ -36,14 +36,20 @@ export default function PriceHistoryChart() {
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-white shadow-md rounded-xl p-6">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">Closing Price History</h2>
-      <ResponsiveContainer width="100%" height={300}>
+      <h2 className="text-2xl font-semibold text-gray-800 mb-4">Bitcoin Price History</h2>
+      <ResponsiveContainer width="100%" height={700}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="Date" />
-          <YAxis dataKey="Close" domain={["auto", "auto"]} />
+          <XAxis dataKey="date" />
+          <YAxis dataKey="price" domain={["auto", "auto"]} />
           <Tooltip />
-          <Line type="monotone" dataKey="Close" stroke="#3b82f6" strokeWidth={2} dot={false} />
+          <Line
+            type="monotone"
+            dataKey="price"
+            stroke="#3b82f6"
+            strokeWidth={2}
+            dot={false}
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>
