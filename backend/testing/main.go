@@ -117,7 +117,7 @@ func enableCORS(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
 
-func std(data []float64, sample bool) float64 {
+func handleStd(data []float64, sample bool) float64 {
 	n := float64(len(data))
 	if n == 0 {
 		return 0
@@ -147,6 +147,24 @@ func std(data []float64, sample bool) float64 {
 	return math.Sqrt(variance)
 }
 
-func zscore() {
+func zscore(value float64, data []float64, sample bool) float64 {
+	n := float64(len(data))
+	if n == 0 {
+		return 0
+	}
+
+	//mean calculation
+	var sum float64
+	for _, v := range data {
+		sum += v
+	}
+	mean := sum / n
+	std := StdDev(data, sample)
+
+	if std == 0 {
+		return 0
+	}
+
+	return (value - mean) / std
 
 }
