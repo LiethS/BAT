@@ -111,42 +111,92 @@ func handleHistory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(history)
 }
 
-func enableCORS(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-	(*w).Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
-}
+func handleStd(w http.ResponseWriter, r *http.Request) {
+	data []float64, sample bool
+	
+	enableCORS(&w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	
+	url := "https://localhost:3001/api/history"
+	
+	resp, err := http.Get(url)
+	if err != nil || resp.StatusCode != 200 {
+		http.Error(w, "Failed to fetch historical data", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+	
 
-func std(data []float64, sample bool) float64 {
+
+	var history []HistoricalPrice
+	for _, entry := range chart.Prices {
+		timestamp := int64(entry[0]) / 1000
+		date := time.Unix(timestamp, 0).Format("2006-01-02")
+		history = append(history, HistoricalPrice{
+			Date:  date,
+			Price: entry[1],
+		})
+	}
+	
+
+
 	n := float64(len(data))
 	if n == 0 {
 		return 0
 	}
-
+	
 	//mean calculation
 	var sum float64
 	for _, v := range data {
 		sum += v
 	}
 	mean := sum / n
-
+	
 	//variance calculation
 	var variance float64
 	for _, v := range data {
 		diff := v - mean
 		variance += diff * diff
 	}
-
+	
 	if sample && n > 1 {
 		variance /= (n - 1)
-	} else {
-		variance /= n
+		} else {
+			variance /= n
+		}
+		
+		//final value of std
+		return math.Sqrt(variance)
 	}
-
-	//final value of std
-	return math.Sqrt(variance)
-}
-
-func zscore() {
-
-}
+	
+	func zscore() {
+		
+	}
+	
+	func enableCORS(w *http.ResponseWriter) {
+		(*w).Header().Set("Access-Control-Allow-Origin", "*")
+		(*w).Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	}
+	
+	// // ----- Manual valuation input -----
+	// 	val := -1.87
+	// 	fmt.Printf("Valuation metric: %.2f\n", val)
+	
+	// 	// Market condition evaluation
+	// 	switch {
+		// 	case val >= -2.0 && val < -1.5:
+			// 		fmt.Println("Market Condition: EXTREME OVERSOLD")
+			// 	case val >= -1.5 && val < -0.2:
+				// 		fmt.Println("Market Condition: OVERSOLD")
+				// 	case val >= -0.2 && val <= 0.2:
+					// 		fmt.Println("Market Condition: NEUTRAL")
+					// 	case val > 0.2 && val <= 1.5:
+						// 		fmt.Println("Market Condition: OVERBOUGHT")
+						// 	case val > 1.5 && val <= 2.0:
+							// 		fmt.Println("Market Condition: EXTREME OVERBOUGHT")
+							// 	default:
+								// 		fmt.Println("Market Condition: Error - val out of expected range")
+								// 	}
