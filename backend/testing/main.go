@@ -142,6 +142,10 @@ func handleStd(w http.ResponseWriter, r *http.Request) {
 	
 
 
+<<<<<<< HEAD
+=======
+func handleStd(data []float64, sample bool) float64 {
+>>>>>>> 59b5d3cb349fe67cf85aad548cef7ea4feccef80
 	n := float64(len(data))
 	if n == 0 {
 		return 0
@@ -170,6 +174,7 @@ func handleStd(w http.ResponseWriter, r *http.Request) {
 		//final value of std
 		return math.Sqrt(variance)
 	}
+<<<<<<< HEAD
 	
 	func zscore() {
 		
@@ -200,3 +205,31 @@ func handleStd(w http.ResponseWriter, r *http.Request) {
 							// 	default:
 								// 		fmt.Println("Market Condition: Error - val out of expected range")
 								// 	}
+=======
+
+	//final value of std
+	return math.Sqrt(variance)
+}
+
+func zscore(value float64, data []float64, sample bool) float64 {
+	n := float64(len(data))
+	if n == 0 {
+		return 0
+	}
+
+	//mean calculation
+	var sum float64
+	for _, v := range data {
+		sum += v
+	}
+	mean := sum / n
+	std := StdDev(data, sample)
+
+	if std == 0 {
+		return 0
+	}
+
+	return (value - mean) / std
+
+}
+>>>>>>> 59b5d3cb349fe67cf85aad548cef7ea4feccef80
