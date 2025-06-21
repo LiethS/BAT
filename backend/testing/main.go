@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"time"
 )
@@ -114,4 +115,38 @@ func enableCORS(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 	(*w).Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
+}
+
+func std(data []float64, sample bool) float64 {
+	n := float64(len(data))
+	if n == 0 {
+		return 0
+	}
+
+	//mean calculation
+	var sum float64
+	for _, v := range data {
+		sum += v
+	}
+	mean := sum / n
+
+	//variance calculation
+	var variance float64
+	for _, v := range data {
+		diff := v - mean
+		variance += diff * diff
+	}
+
+	if sample && n > 1 {
+		variance /= (n - 1)
+	} else {
+		variance /= n
+	}
+
+	//final value of std
+	return math.Sqrt(variance)
+}
+
+func zscore() {
+
 }
