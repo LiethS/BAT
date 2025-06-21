@@ -142,10 +142,6 @@ func handleStd(w http.ResponseWriter, r *http.Request) {
 	
 
 
-<<<<<<< HEAD
-=======
-func handleStd(data []float64, sample bool) float64 {
->>>>>>> 59b5d3cb349fe67cf85aad548cef7ea4feccef80
 	n := float64(len(data))
 	if n == 0 {
 		return 0
